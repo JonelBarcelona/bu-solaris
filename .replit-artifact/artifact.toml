@@ -1,0 +1,22 @@
+kind = "web"
+previewPath = "/"
+title = "BU SOLARIS"
+version = "1.0.0"
+id = "artifacts/bu-solaris"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18747
+
+[services.development]
+run = "python app.py"
+
+[services.env]
+PORT = "18747"
+BASE_PATH = "/"

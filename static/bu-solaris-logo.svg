@@ -1,0 +1,44 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="ray-grad" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#e879f9"/>
+      <stop offset="100%" stop-color="#f97316"/>
+    </linearGradient>
+    <radialGradient id="core-grad" cx="38%" cy="36%" r="62%">
+      <stop offset="0%" stop-color="#fde68a"/>
+      <stop offset="52%" stop-color="#f97316"/>
+      <stop offset="100%" stop-color="#c026d3"/>
+    </radialGradient>
+    <clipPath id="sun-clip">
+      <circle cx="256" cy="256" r="114"/>
+    </clipPath>
+  </defs>
+
+  <!-- 8 Radiating Rays -->
+  <g stroke="url(#ray-grad)" stroke-width="28" stroke-linecap="round">
+    <line x1="256" y1="18"  x2="256" y2="100"/>
+    <line x1="256" y1="412" x2="256" y2="494"/>
+    <line x1="18"  y1="256" x2="100" y2="256"/>
+    <line x1="412" y1="256" x2="494" y2="256"/>
+    <line x1="76"  y1="76"  x2="134" y2="134"/>
+    <line x1="378" y1="378" x2="436" y2="436"/>
+    <line x1="436" y1="76"  x2="378" y2="134"/>
+    <line x1="134" y1="378" x2="76"  y2="436"/>
+  </g>
+
+  <!-- Sun Body -->
+  <circle cx="256" cy="256" r="114" fill="url(#core-grad)"/>
+
+  <!-- Solar Panel Grid (clipped to sun disc) -->
+  <g clip-path="url(#sun-clip)" stroke="rgba(255,255,255,0.38)" stroke-width="10">
+    <line x1="142" y1="256" x2="370" y2="256"/>
+    <line x1="256" y1="142" x2="256" y2="370"/>
+    <line x1="142" y1="204" x2="370" y2="204"/>
+    <line x1="142" y1="308" x2="370" y2="308"/>
+    <line x1="204" y1="142" x2="204" y2="370"/>
+    <line x1="308" y1="142" x2="308" y2="370"/>
+  </g>
+
+  <!-- Outer ring highlight -->
+  <circle cx="256" cy="256" r="114" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="10"/>
+</svg>

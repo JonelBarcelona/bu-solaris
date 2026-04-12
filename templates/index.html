@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BU SOLARIS — Solar PV Sizing &amp; Yield Estimation</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+
+<!-- ── Loading Screen ─────────────────────────────────── -->
+<div id="loading-screen">
+  <div class="stars" id="stars"></div>
+
+  <div class="solar-system">
+    <svg class="orbit-ring orbit-1" width="160" height="160" viewBox="0 0 160 160">
+      <circle cx="80" cy="80" r="68" fill="none" stroke="rgba(249,115,22,0.15)" stroke-width="1.5" stroke-dasharray="4 6"/>
+      <circle cx="80" cy="12" r="6" fill="#f97316"/>
+    </svg>
+    <svg class="orbit-ring orbit-2" width="120" height="120" viewBox="0 0 120 120" style="position:absolute;">
+      <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(192,38,211,0.20)" stroke-width="1.5" stroke-dasharray="3 5"/>
+      <circle cx="60" cy="10" r="5" fill="#c026d3"/>
+    </svg>
+    <div class="solar-core">
+      <svg width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <clipPath id="load-clip"><circle cx="19" cy="19" r="8.5"/></clipPath>
+        </defs>
+        <g stroke="rgba(255,255,255,0.88)" stroke-width="2.2" stroke-linecap="round">
+          <line x1="19" y1="2" x2="19" y2="7.5"/>
+          <line x1="19" y1="30.5" x2="19" y2="36"/>
+          <line x1="2" y1="19" x2="7.5" y2="19"/>
+          <line x1="30.5" y1="19" x2="36" y2="19"/>
+          <line x1="6.1" y1="6.1" x2="10" y2="10"/>
+          <line x1="28" y1="28" x2="31.9" y2="31.9"/>
+          <line x1="31.9" y1="6.1" x2="28" y2="10"/>
+          <line x1="10" y1="28" x2="6.1" y2="31.9"/>
+        </g>
+        <circle cx="19" cy="19" r="8.5" fill="rgba(255,255,255,0.18)" stroke="rgba(255,255,255,0.82)" stroke-width="1.6"/>
+        <g clip-path="url(#load-clip)" stroke="rgba(255,255,255,0.48)" stroke-width="0.9">
+          <line x1="10.5" y1="19" x2="27.5" y2="19"/>
+          <line x1="19" y1="10.5" x2="19" y2="27.5"/>
+          <line x1="10.5" y1="15.3" x2="27.5" y2="15.3"/>
+          <line x1="10.5" y1="22.7" x2="27.5" y2="22.7"/>
+          <line x1="15.3" y1="10.5" x2="15.3" y2="27.5"/>
+          <line x1="22.7" y1="10.5" x2="22.7" y2="27.5"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div style="text-align:center;padding:0 2rem;max-width:480px;">
+    <h1 class="loading-title">BU SOLARIS</h1>
+    <p class="loading-subtitle">Solar PV System Sizing &amp; Yield Estimation</p>
+    <p class="loading-uni">Bicol University · IEC 61724 Standard</p>
+    <div class="nasa-badge">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+      Powered by NASA POWER Satellite Data
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-label"><span>Initializing</span><span>Systems</span></div>
+      <div class="progress-track"><div class="progress-bar"></div></div>
+    </div>
+    <p class="loading-credit">Barcelona · Luz · Ibañez</p>
+  </div>
+</div>
+
+<!-- ── Header ─────────────────────────────────────────── -->
+<header>
+  <div class="header-glow"></div>
+  <div class="header-inner">
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <div class="logo-icon">
+        <svg width="28" height="28" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="hdr-ray-grad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#e879f9"/>
+              <stop offset="100%" stop-color="#f97316"/>
+            </linearGradient>
+            <radialGradient id="hdr-core-grad" cx="38%" cy="36%" r="62%">
+              <stop offset="0%" stop-color="#fde68a"/>
+              <stop offset="52%" stop-color="#f97316"/>
+              <stop offset="100%" stop-color="#c026d3"/>
+            </radialGradient>
+            <clipPath id="hdr-clip"><circle cx="18" cy="18" r="8"/></clipPath>
+          </defs>
+          <g stroke="url(#hdr-ray-grad)" stroke-width="2.6" stroke-linecap="round">
+            <line x1="18" y1="1.5" x2="18" y2="6.5"/>
+            <line x1="18" y1="29.5" x2="18" y2="34.5"/>
+            <line x1="1.5" y1="18" x2="6.5" y2="18"/>
+            <line x1="29.5" y1="18" x2="34.5" y2="18"/>
+            <line x1="5.5" y1="5.5" x2="9.2" y2="9.2"/>
+            <line x1="26.8" y1="26.8" x2="30.5" y2="30.5"/>
+            <line x1="30.5" y1="5.5" x2="26.8" y2="9.2"/>
+            <line x1="9.2" y1="26.8" x2="5.5" y2="30.5"/>
+          </g>
+          <circle cx="18" cy="18" r="8" fill="url(#hdr-core-grad)"/>
+          <g clip-path="url(#hdr-clip)" stroke="rgba(255,255,255,0.38)" stroke-width="0.9">
+            <line x1="10" y1="18" x2="26" y2="18"/>
+            <line x1="18" y1="10" x2="18" y2="26"/>
+            <line x1="10" y1="14.3" x2="26" y2="14.3"/>
+            <line x1="10" y1="21.7" x2="26" y2="21.7"/>
+            <line x1="14.3" y1="10" x2="14.3" y2="26"/>
+            <line x1="21.7" y1="10" x2="21.7" y2="26"/>
+          </g>
+          <circle cx="18" cy="18" r="8" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+        </svg>
+      </div>
+      <div class="logo-text">
+        <h1>BU SOLARIS</h1>
+        <p>Solar PV System Sizing &amp; Yield Estimation · IEC 61724</p>
+      </div>
+    </div>
+    <div class="header-badges">
+      <div class="badge-nasa">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+        NASA POWER Data
+      </div>
+      <div class="badge-makers">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        Barcelona · Luz · Ibañez
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ── Info Bar ────────────────────────────────────────── -->
+<div class="info-bar">
+  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2.2" style="opacity:.7"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+  Irradiance data sourced in real-time from NASA POWER Climatology API — satellite-derived global horizontal irradiance (GHI) measurements
+</div>
+
+<!-- ── Main Content ────────────────────────────────────── -->
+<main>
+
+  <!-- Column 1: Location Map -->
+  <div class="card" style="display:flex;flex-direction:column;">
+    <div class="card-header">
+      <div class="card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2.2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        Site Location
+      </div>
+      <div class="card-desc">Click the map to select installation coordinates</div>
+    </div>
+    <div class="card-body" style="flex:1;display:flex;flex-direction:column;">
+      <div id="map"></div>
+      <div class="ghi-status">
+        <span class="ghi-label">NASA GHI Data</span>
+        <span id="ghi-status-text" class="status-pending">
+          <span class="status-dot"></span>Select Location
+        </span>
+      </div>
+      <div class="coord-display" id="coord-display">Lat: 14.5995° &nbsp;|&nbsp; Lon: 120.9842°</div>
+    </div>
+  </div>
+
+  <!-- Column 2: System Parameters -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c026d3" stroke-width="2.2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        System Parameters
+      </div>
+      <div class="card-desc">Configure technical specifications</div>
+    </div>
+    <div class="card-body">
+      <div class="field">
+        <label for="n-panels">Number of Panels</label>
+        <input type="number" id="n-panels" value="20" min="1" data-testid="input-panels" />
+      </div>
+      <div class="field">
+        <label for="panel-wattage">Panel Wattage (Wp)</label>
+        <input type="number" id="panel-wattage" value="400" min="1" data-testid="input-wattage" />
+      </div>
+      <div class="field-row">
+        <div class="field" style="margin-bottom:0;">
+          <label for="panel-efficiency">Panel Eff. (%)</label>
+          <input type="number" id="panel-efficiency" value="20" min="1" max="100" data-testid="input-paneleff" />
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label for="inverter-efficiency">Inv. Eff. (%)</label>
+          <input type="number" id="inverter-efficiency" value="96" min="1" max="100" data-testid="input-inveff" />
+        </div>
+      </div>
+      <div class="field" style="margin-top:1rem;">
+        <label for="system-losses">System Losses (%)</label>
+        <input type="number" id="system-losses" value="14" min="0" max="100" data-testid="input-losses" />
+      </div>
+      <div class="divider"></div>
+      <div class="field">
+        <label for="tariff">Electricity Tariff (₱/kWh)</label>
+        <input type="number" id="tariff" value="9.50" min="0" step="0.01" data-testid="input-tariff" />
+      </div>
+      <div class="field">
+        <label for="installation-cost">Installation Cost (₱)</label>
+        <input type="number" id="installation-cost" value="280000" min="0" data-testid="input-cost" />
+      </div>
+      <button class="btn-analyze" id="btn-analyze" disabled data-testid="button-analyze">Run Analysis</button>
+    </div>
+  </div>
+
+  <!-- Column 3: Results -->
+  <div class="card" id="results-card" style="overflow:hidden;">
+    <!-- Placeholder state -->
+    <div id="results-placeholder" class="results-placeholder">
+      <div class="placeholder-icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="1.8" opacity="0.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </div>
+      <div class="placeholder-title">Ready for Analysis</div>
+      <p class="placeholder-body">Select a location on the map, configure your system parameters, and click Run Analysis to generate a comprehensive IEC 61724 yield report.</p>
+      <div class="placeholder-note">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+        Real-time NASA POWER satellite irradiance data
+      </div>
+    </div>
+
+    <!-- Spinner state -->
+    <div id="results-spinner" class="spinner-wrap" style="display:none;">
+      <div class="spinner"></div>
+      <p class="spinner-text">Computing IEC 61724 yield estimations...</p>
+    </div>
+
+    <!-- Results state -->
+    <div id="results-content" style="display:none;">
+      <div class="results-header">
+        <span class="results-title">Analysis Results</span>
+        <span id="payback-badge" class="badge-payback"></span>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-cell">
+          <div class="kpi-label">Annual AC Yield</div>
+          <div class="kpi-value kpi-orange"><span id="kpi-yield" data-testid="result-yield">—</span> <span class="kpi-unit">kWh</span></div>
+        </div>
+        <div class="kpi-cell">
+          <div class="kpi-label">System Capacity</div>
+          <div class="kpi-value kpi-purple"><span id="kpi-capacity" data-testid="result-capacity">—</span> <span class="kpi-unit">kWp</span></div>
+        </div>
+        <div class="kpi-cell">
+          <div class="kpi-label">Panel Area</div>
+          <div class="kpi-value kpi-orange"><span id="kpi-area" data-testid="result-area">—</span> <span class="kpi-unit">m²</span></div>
+        </div>
+        <div class="kpi-cell">
+          <div class="kpi-label">Inverter Size</div>
+          <div class="kpi-value kpi-purple"><span id="kpi-inverter" data-testid="result-inverter">—</span> <span class="kpi-unit">kVA</span></div>
+        </div>
+        <div class="kpi-cell">
+          <div class="kpi-label">Payback Period</div>
+          <div class="kpi-value kpi-orange"><span id="kpi-payback" data-testid="result-payback">—</span> <span class="kpi-unit">years</span></div>
+        </div>
+        <div class="kpi-cell">
+          <div class="kpi-label">CO₂ Offset</div>
+          <div class="kpi-value kpi-green"><span id="kpi-co2" data-testid="result-co2">—</span> <span class="kpi-unit">kg/yr</span></div>
+        </div>
+      </div>
+
+      <div class="gauge-section">
+        <div class="gauge-title">Payback Period Gauge</div>
+        <svg id="gauge-svg" width="240" height="130" viewBox="0 0 240 130" role="img" aria-label="Payback gauge" data-testid="payback-gauge"></svg>
+        <div class="gauge-legend">
+          <div class="gauge-legend-item"><span class="legend-dot" style="background:#10b981;"></span>&lt; 5yr</div>
+          <div class="gauge-legend-item"><span class="legend-dot" style="background:#3b82f6;"></span>5–10yr</div>
+          <div class="gauge-legend-item"><span class="legend-dot" style="background:#f59e0b;"></span>10–15yr</div>
+          <div class="gauge-legend-item"><span class="legend-dot" style="background:#ef4444;"></span>&gt; 15yr</div>
+        </div>
+      </div>
+
+      <div class="chart-section">
+        <div class="section-title">Monthly Energy &amp; Irradiance</div>
+        <div id="monthly-chart"></div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Month</th><th>GHI</th><th>DC (kWh)</th><th>AC (kWh)</th></tr>
+          </thead>
+          <tbody id="monthly-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ── Footer ─────────────────────────────────────────── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-left">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2.2" opacity="0.4"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+      Irradiance data provided by NASA POWER (Prediction Of Worldwide Energy Resources) Climatology API
+    </div>
+    <div class="footer-right">
+      <strong>BU SOLARIS</strong> &nbsp;·&nbsp; Developed by Barcelona · Luz · Ibañez &nbsp;·&nbsp; Bicol University
+    </div>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>
