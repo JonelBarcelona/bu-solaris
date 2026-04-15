@@ -4,11 +4,16 @@
   const DEFAULT_LAT = 14.5995;
   const DEFAULT_LON = 120.9842;
   const MAX_GAUGE_YEARS = 20;
+  const HISTORY_KEY = "busolaris_history";
+  const MAX_HISTORY = 5;
 
   let currentLat = DEFAULT_LAT;
   let currentLon = DEFAULT_LON;
+  let currentLocationName = null;
   let monthlyGhi = null;
   let marker = null;
+  let lastResult = null;
+  let lastInputs = null;
 
   // ── Stars ──────────────────────────────────────────────
   (function generateStars() {
@@ -57,9 +62,10 @@
     marker = L.marker([lat, lon], { icon: markerIcon }).addTo(map);
   }
 
-  function updateCoords(lat, lon) {
+  function updateCoords(lat, lon, locationName) {
     currentLat = lat;
     currentLon = lon;
+    currentLocationName = locationName || null;
     document.getElementById("coord-display").innerHTML =
       `Lat: ${lat.toFixed(4)}° &nbsp;|&nbsp; Lon: ${lon.toFixed(4)}°`;
     setMarker(lat, lon);
@@ -67,12 +73,59 @@
   }
 
   map.on("click", function (e) {
-    updateCoords(e.latlng.lat, e.latlng.lng);
+    clearSearchError();
+    updateCoords(e.latlng.lat, e.latlng.lng, null);
   });
 
   // Initial marker + irradiance fetch
   setMarker(DEFAULT_LAT, DEFAULT_LON);
   fetchIrradiance(DEFAULT_LAT, DEFAULT_LON);
+
+  // ── Location Search (Nominatim) ────────────────────────
+  const searchInput = document.getElementById("location-search");
+  const btnSearch = document.getElementById("btn-search");
+  const searchError = document.getElementById("search-error");
+
+  function clearSearchError() {
+    searchError.style.display = "none";
+  }
+
+  function doLocationSearch() {
+    const query = searchInput.value.trim();
+    if (!query) return;
+    clearSearchError();
+    btnSearch.disabled = true;
+    btnSearch.style.opacity = "0.5";
+
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
+    fetch(url, { headers: { "Accept-Language": "en" } })
+      .then(function (r) { return r.json(); })
+      .then(function (results) {
+        btnSearch.disabled = false;
+        btnSearch.style.opacity = "1";
+        if (!results || results.length === 0) {
+          searchError.style.display = "block";
+          return;
+        }
+        const place = results[0];
+        const lat = parseFloat(place.lat);
+        const lon = parseFloat(place.lon);
+        const name = place.display_name ? place.display_name.split(",").slice(0, 2).join(", ") : query;
+        map.setView([lat, lon], 11);
+        updateCoords(lat, lon, name);
+      })
+      .catch(function () {
+        btnSearch.disabled = false;
+        btnSearch.style.opacity = "1";
+        searchError.textContent = "Search unavailable. Click the map directly.";
+        searchError.style.display = "block";
+      });
+  }
+
+  btnSearch.addEventListener("click", doLocationSearch);
+  searchInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { e.preventDefault(); doLocationSearch(); }
+  });
 
   // ── GHI Status helpers ─────────────────────────────────
   function setGhiLoading() {
@@ -109,6 +162,25 @@
       .catch(function () { setGhiError("Failed"); });
   }
 
+  // ── Panel Presets ──────────────────────────────────────
+  const presetSelect = document.getElementById("panel-preset");
+  const presetTag = document.getElementById("preset-tag");
+
+  presetSelect.addEventListener("change", function () {
+    const opt = presetSelect.options[presetSelect.selectedIndex];
+    const wattage = opt.dataset.wattage;
+    const efficiency = opt.dataset.efficiency;
+
+    if (wattage && efficiency) {
+      document.getElementById("panel-wattage").value = wattage;
+      document.getElementById("panel-efficiency").value = efficiency;
+      presetTag.textContent = "Preset applied — wattage & efficiency auto-filled";
+      presetTag.style.display = "block";
+    } else {
+      presetTag.style.display = "none";
+    }
+  });
+
   // ── Analyze Button ─────────────────────────────────────
   document.getElementById("btn-analyze").addEventListener("click", function () {
     if (!monthlyGhi) return;
@@ -123,6 +195,16 @@
     const sysLosses = parseFloat(document.getElementById("system-losses").value) / 100;
     const tariff = parseFloat(document.getElementById("tariff").value);
     const cost = parseFloat(document.getElementById("installation-cost").value);
+
+    lastInputs = {
+      nPanels, panelWattage,
+      panelEffPct: parseFloat(document.getElementById("panel-efficiency").value),
+      invEffPct: parseFloat(document.getElementById("inverter-efficiency").value),
+      sysLossesPct: parseFloat(document.getElementById("system-losses").value),
+      tariff, cost,
+      lat: currentLat, lon: currentLon,
+      monthlyGhi: monthlyGhi.slice(),
+    };
 
     showSpinner();
 
@@ -145,7 +227,10 @@
       .then(function (r) { return r.json(); })
       .then(function (data) {
         if (data.error) { showPlaceholder(); return; }
+        lastResult = data;
         renderResults(data);
+        saveHistory(data, lastInputs);
+        renderHistory();
       })
       .catch(function () { showPlaceholder(); });
   }
@@ -171,7 +256,6 @@
 
   // ── Render Results ─────────────────────────────────────
   function renderResults(r) {
-    // KPI values
     document.getElementById("kpi-yield").textContent =
       Math.round(r.annual_ac_kwh).toLocaleString();
     document.getElementById("kpi-capacity").textContent =
@@ -184,21 +268,25 @@
       r.payback_years.toFixed(1);
     document.getElementById("kpi-co2").textContent =
       Math.round(r.co2_offset_kg).toLocaleString();
+    document.getElementById("kpi-savings").textContent =
+      "₱ " + Math.round(r.annual_savings).toLocaleString() + " / year";
 
-    // Payback badge
     const badge = document.getElementById("payback-badge");
     const cls = r.payback_classification.toLowerCase();
     badge.className = `badge-payback badge-${cls}`;
     badge.textContent = r.payback_classification + " Payback";
 
-    // Gauge
     renderGauge(r.payback_years, r.payback_classification);
-
-    // Chart
     renderChart(r.monthly_results);
-
-    // Table
     renderTable(r.monthly_results, r.annual_dc_kwh, r.annual_ac_kwh);
+
+    // Populate print meta
+    document.getElementById("print-date").textContent = new Date().toLocaleDateString("en-PH", {
+      year: "numeric", month: "long", day: "numeric",
+    });
+    document.getElementById("print-coords").textContent =
+      `${r.lat.toFixed(4)}°, ${r.lon.toFixed(4)}°` +
+      (currentLocationName ? ` (${currentLocationName})` : "");
 
     showResults();
   }
@@ -242,17 +330,14 @@
 
     let html = "";
 
-    // Zone arcs (faded)
     zones.forEach(function (z) {
       const a1 = startAngle + (z.from / MAX_GAUGE_YEARS) * totalDeg;
       const a2 = startAngle + (z.to / MAX_GAUGE_YEARS) * totalDeg;
       html += `<path d="${arcPath(a1, a2)}" stroke="${z.color}" stroke-width="16" fill="none" stroke-linecap="butt" opacity="0.22"/>`;
     });
 
-    // Active arc
     html += `<path d="${arcPath(startAngle, needleAngle)}" stroke="${clrNeedle}" stroke-width="16" fill="none" stroke-linecap="round"/>`;
 
-    // Needle
     const tip = polar(needleAngle);
     html += `<line x1="${cx}" y1="${cy}" x2="${tip.x}" y2="${tip.y}" stroke="white" stroke-width="2.5" stroke-linecap="round"/>`;
     html += `<circle cx="${cx}" cy="${cy}" r="5" fill="white"/>`;
@@ -338,5 +423,203 @@
     </tr>`;
     tbody.innerHTML = rows;
   }
+
+  // ── Methodology Modal ──────────────────────────────────
+  const modalOverlay = document.getElementById("modal-overlay");
+  const btnFormula = document.getElementById("btn-formula");
+  const btnModalClose = document.getElementById("btn-modal-close");
+
+  btnFormula.addEventListener("click", function () {
+    modalOverlay.style.display = "flex";
+    document.body.style.overflow = "hidden";
+  });
+
+  function closeModal() {
+    modalOverlay.style.display = "none";
+    document.body.style.overflow = "";
+  }
+
+  btnModalClose.addEventListener("click", closeModal);
+  modalOverlay.addEventListener("click", function (e) {
+    if (e.target === modalOverlay) { closeModal(); }
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && modalOverlay.style.display !== "none") { closeModal(); }
+  });
+
+  // ── PDF Report Export ──────────────────────────────────
+  const btnDownload = document.getElementById("btn-download");
+
+  btnDownload.addEventListener("click", function () {
+    if (!lastResult) return;
+    document.body.classList.add("print-ready");
+    window.print();
+    window.addEventListener("afterprint", function onAfterPrint() {
+      document.body.classList.remove("print-ready");
+      window.removeEventListener("afterprint", onAfterPrint);
+    });
+  });
+
+  // ── Calculation History ────────────────────────────────
+  function loadHistory() {
+    try {
+      return JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveHistory(result, inputs) {
+    const history = loadHistory();
+    const entry = {
+      id: Date.now(),
+      timestamp: new Date().toISOString(),
+      locationName: currentLocationName,
+      lat: result.lat,
+      lon: result.lon,
+      annual_ac_kwh: result.annual_ac_kwh,
+      annual_savings: result.annual_savings,
+      payback_years: result.payback_years,
+      payback_classification: result.payback_classification,
+      co2_offset_kg: result.co2_offset_kg,
+      system_capacity_kwp: result.system_capacity_kwp,
+      panel_area: result.panel_area,
+      inverter_capacity_kva: result.inverter_capacity_kva,
+      annual_dc_kwh: result.annual_dc_kwh,
+      installation_cost: result.installation_cost,
+      monthly_results: result.monthly_results,
+      inputs: inputs,
+    };
+    history.unshift(entry);
+    const trimmed = history.slice(0, MAX_HISTORY);
+    try {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(trimmed));
+    } catch (e) {}
+  }
+
+  function formatTime(iso) {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleDateString("en-PH", { month: "short", day: "numeric" }) +
+        " " + d.toLocaleTimeString("en-PH", { hour: "2-digit", minute: "2-digit" });
+    } catch (e) { return ""; }
+  }
+
+  function renderHistory() {
+    const history = loadHistory();
+    const section = document.getElementById("history-section");
+    const list = document.getElementById("history-list");
+
+    if (history.length === 0) {
+      section.style.display = "none";
+      return;
+    }
+
+    section.style.display = "";
+    list.innerHTML = "";
+
+    history.forEach(function (entry) {
+      const locLabel = entry.locationName
+        ? entry.locationName
+        : (entry.lat.toFixed(2) + "\u00b0, " + entry.lon.toFixed(2) + "\u00b0");
+
+      const item = document.createElement("div");
+      item.className = "history-item";
+
+      const left = document.createElement("div");
+      left.className = "history-item-left";
+
+      const locEl = document.createElement("div");
+      locEl.className = "history-loc";
+      locEl.setAttribute("title", locLabel);
+      locEl.textContent = locLabel;
+
+      const timeEl = document.createElement("div");
+      timeEl.className = "history-time";
+      timeEl.textContent = formatTime(entry.timestamp);
+
+      left.appendChild(locEl);
+      left.appendChild(timeEl);
+
+      const right = document.createElement("div");
+      right.className = "history-item-right";
+
+      const yieldEl = document.createElement("div");
+      yieldEl.className = "history-yield";
+      yieldEl.textContent = Math.round(entry.annual_ac_kwh).toLocaleString() + " kWh/yr";
+
+      const pbEl = document.createElement("div");
+      pbEl.className = "history-payback";
+      pbEl.textContent = entry.payback_years.toFixed(1) + " yr payback";
+
+      right.appendChild(yieldEl);
+      right.appendChild(pbEl);
+
+      item.appendChild(left);
+      item.appendChild(right);
+
+      item.addEventListener("click", function () {
+        restoreFromHistory(entry);
+      });
+
+      list.appendChild(item);
+    });
+  }
+
+  function restoreFromHistory(entry) {
+    // Restore inputs
+    const inp = entry.inputs;
+    if (inp) {
+      document.getElementById("n-panels").value = inp.nPanels;
+      document.getElementById("panel-wattage").value = inp.panelWattage;
+      document.getElementById("panel-efficiency").value = inp.panelEffPct;
+      document.getElementById("inverter-efficiency").value = inp.invEffPct;
+      document.getElementById("system-losses").value = inp.sysLossesPct;
+      document.getElementById("tariff").value = inp.tariff;
+      document.getElementById("installation-cost").value = inp.cost;
+      document.getElementById("panel-preset").value = "";
+      presetTag.style.display = "none";
+    }
+
+    // Restore map position
+    currentLat = entry.lat;
+    currentLon = entry.lon;
+    currentLocationName = entry.locationName || null;
+    monthlyGhi = entry.inputs ? entry.inputs.monthlyGhi : null;
+
+    map.setView([entry.lat, entry.lon], 10);
+    setMarker(entry.lat, entry.lon);
+    document.getElementById("coord-display").innerHTML =
+      `Lat: ${entry.lat.toFixed(4)}° &nbsp;|&nbsp; Lon: ${entry.lon.toFixed(4)}°`;
+
+    if (monthlyGhi) {
+      setGhiReady();
+    }
+
+    // Re-render results directly from stored data
+    lastResult = entry;
+    lastInputs = entry.inputs;
+    renderResults(entry);
+  }
+
+  document.getElementById("btn-history-clear").addEventListener("click", function () {
+    try { localStorage.removeItem(HISTORY_KEY); } catch (e) {}
+    document.getElementById("history-section").style.display = "none";
+  });
+
+  // ── History Collapse Toggle ────────────────────────────
+  var historyExpanded = true;
+  document.getElementById("btn-history-toggle").addEventListener("click", function () {
+    historyExpanded = !historyExpanded;
+    const list = document.getElementById("history-list");
+    const chevron = document.getElementById("history-chevron");
+    const btn = document.getElementById("btn-history-toggle");
+    list.style.display = historyExpanded ? "" : "none";
+    chevron.style.transform = historyExpanded ? "" : "rotate(180deg)";
+    btn.setAttribute("aria-expanded", historyExpanded ? "true" : "false");
+  });
+
+  // Load history on page start
+  renderHistory();
 
 })();
