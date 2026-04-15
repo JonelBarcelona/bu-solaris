@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Login — BU SOLARIS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: linear-gradient(160deg, #0d0517 0%, #180a2e 45%, #1e0a0a 100%);
+      min-height: 100vh; color: #f1f5f9;
+      display: flex; align-items: center; justify-content: center;
+      -webkit-font-smoothing: antialiased;
+    }
+    .login-wrap {
+      width: 100%; max-width: 400px; padding: 1.5rem;
+    }
+    .logo-row {
+      display: flex; align-items: center; gap: 0.75rem; margin-bottom: 2rem;
+      justify-content: center;
+    }
+    .logo-dot {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: radial-gradient(circle, #fbbf24, #f97316 50%, #c026d3);
+      box-shadow: 0 0 20px rgba(249,115,22,0.5);
+      flex-shrink: 0;
+    }
+    .logo-label h1 { font-size: 1.2rem; font-weight: 700; letter-spacing: 0.14em;
+      background: linear-gradient(135deg, #f97316, #e879f9);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .logo-label p { font-size: 0.62rem; color: rgba(255,255,255,0.38); letter-spacing: 0.1em; text-transform: uppercase; }
+    .card {
+      background: rgba(20, 12, 40, 0.85); border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px; padding: 2rem; backdrop-filter: blur(16px);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+    }
+    .card-title { font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .card-subtitle { font-size: 0.72rem; color: rgba(255,255,255,0.4); margin-bottom: 1.5rem; }
+    label {
+      display: block; font-size: 0.65rem; font-weight: 600; letter-spacing: 0.1em;
+      text-transform: uppercase; color: rgba(255,255,255,0.45); margin-bottom: 0.3rem;
+    }
+    input[type="password"] {
+      width: 100%; padding: 0.6rem 0.85rem;
+      background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 7px; color: #f1f5f9; font-size: 0.95rem;
+      font-family: 'Space Grotesk', sans-serif; outline: none;
+      transition: border-color 0.2s; margin-bottom: 1.25rem;
+    }
+    input[type="password"]:focus { border-color: rgba(249,115,22,0.55); }
+    .btn-login {
+      width: 100%; height: 46px; border: none; border-radius: 8px;
+      font-family: 'Space Grotesk', sans-serif; font-size: 0.9rem; font-weight: 700;
+      letter-spacing: 0.06em; color: white; cursor: pointer;
+      background: linear-gradient(135deg, #f97316, #c026d3);
+      box-shadow: 0 0 20px rgba(249,115,22,0.3);
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn-login:hover { opacity: 0.9; transform: translateY(-1px); }
+    .error-msg {
+      background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25);
+      border-radius: 7px; padding: 0.6rem 0.85rem;
+      font-size: 0.78rem; color: #f87171; margin-bottom: 1rem;
+    }
+    .back-link {
+      display: block; text-align: center; margin-top: 1.25rem;
+      font-size: 0.72rem; color: rgba(255,255,255,0.3);
+      text-decoration: none; transition: color 0.2s;
+    }
+    .back-link:hover { color: rgba(255,255,255,0.6); }
+    .admin-badge {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase;
+      color: rgba(192,38,211,0.7); margin-bottom: 1.5rem;
+      padding: 0.25rem 0.65rem; border-radius: 999px;
+      background: rgba(192,38,211,0.08); border: 1px solid rgba(192,38,211,0.2);
+    }
+  </style>
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="logo-row">
+      <div class="logo-dot"></div>
+      <div class="logo-label">
+        <h1>BU SOLARIS</h1>
+        <p>Admin Dashboard</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="admin-badge">🔒 Restricted Access</div>
+      <div class="card-title">Administrator Login</div>
+      <div class="card-subtitle">Bicol University · Barcelona · Luz · Ibañez</div>
+
+      {% if error %}
+      <div class="error-msg">{{ error }}</div>
+      {% endif %}
+
+      <form method="POST" action="{{ url_for('admin_login') }}">
+        <label for="password">Admin Password</label>
+        <input type="password" id="password" name="password" placeholder="Enter password…" autofocus required />
+        <button type="submit" class="btn-login">Sign In</button>
+      </form>
+
+      <a href="{{ url_for('index') }}" class="back-link">← Back to BU SOLARIS</a>
+    </div>
+  </div>
+</body>
+</html>

@@ -66,6 +66,25 @@
   </div>
 </div>
 
+<!-- ── Print Report Header (shown only in print/PDF) ───── -->
+<div id="print-header">
+  <div class="print-header-top">
+    <div>
+      <div class="print-title">BU SOLARIS</div>
+      <div class="print-subtitle">Solar PV System Sizing &amp; Yield Estimation — IEC 61724 Compliance Report</div>
+    </div>
+    <div class="print-meta">
+      <div>Report Date: <span id="print-date"></span></div>
+      <div>Coordinates: <span id="print-coords"></span></div>
+    </div>
+  </div>
+  <div class="print-notice">
+    Data Source: NASA POWER Climatology API (NASA Langley Research Center, power.larc.nasa.gov) &nbsp;·&nbsp;
+    Standard: IEC 61724-1:2021 Photovoltaic System Performance &nbsp;·&nbsp;
+    Developed by: Barcelona · Luz · Ibañez &nbsp;·&nbsp; Bicol University &nbsp;·&nbsp; BSEE-1B
+  </div>
+</div>
+
 <!-- ── Header ─────────────────────────────────────────── -->
 <header>
   <div class="header-glow"></div>
@@ -141,9 +160,24 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2.2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
         Site Location
       </div>
-      <div class="card-desc">Click the map to select installation coordinates</div>
+      <div class="card-desc">Search a location or click the map to select coordinates</div>
     </div>
     <div class="card-body" style="flex:1;display:flex;flex-direction:column;">
+      <!-- Location Search Bar -->
+      <div class="search-wrap">
+        <input
+          type="text"
+          id="location-search"
+          class="search-input"
+          placeholder="Search location (e.g. Legazpi City, Albay)…"
+          autocomplete="off"
+        />
+        <button id="btn-search" class="btn-search" aria-label="Search location">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </button>
+      </div>
+      <div id="search-error" class="search-error" style="display:none;">Location not found. Try a different name.</div>
+
       <div id="map"></div>
       <div class="ghi-status">
         <span class="ghi-label">NASA GHI Data</span>
@@ -165,18 +199,38 @@
       <div class="card-desc">Configure technical specifications</div>
     </div>
     <div class="card-body">
+      <!-- Panel Preset Dropdown -->
+      <div class="field">
+        <label for="panel-preset">Panel Model Preset</label>
+        <select id="panel-preset" class="select-preset">
+          <option value="">— Custom / Manual Entry —</option>
+          <option value="jinko-400" data-wattage="400" data-efficiency="20.4">Jinko Solar JKM400M-54SHL (400 Wp)</option>
+          <option value="jinko-415" data-wattage="415" data-efficiency="21.3">Jinko Solar JKM415N-54HL4 (415 Wp)</option>
+          <option value="canadian-405" data-wattage="405" data-efficiency="19.8">Canadian Solar CS3W-405MS (405 Wp)</option>
+          <option value="longi-380" data-wattage="380" data-efficiency="19.8">LONGi LR4-60HIH-380M (380 Wp)</option>
+          <option value="risen-410" data-wattage="410" data-efficiency="20.4">Risen Energy RSM40-8-410M (410 Wp)</option>
+          <option value="ja-385" data-wattage="385" data-efficiency="19.5">JA Solar JAM60S20-385/MR (385 Wp)</option>
+          <option value="trina-400" data-wattage="400" data-efficiency="20.5">Trina Solar TSM-400DE09.08 (400 Wp)</option>
+          <option value="rec-405" data-wattage="405" data-efficiency="21.7">REC Alpha 405AA (405 Wp)</option>
+          <option value="solaria-390" data-wattage="390" data-efficiency="20.2">Solaria PowerXT-390R-PD (390 Wp)</option>
+          <option value="seraphim-410" data-wattage="410" data-efficiency="20.9">Seraphim SRP-410-BMA (410 Wp)</option>
+        </select>
+        <div class="preset-tag" id="preset-tag" style="display:none;"></div>
+      </div>
+      <div class="divider"></div>
+
       <div class="field">
         <label for="n-panels">Number of Panels</label>
-        <input type="number" id="n-panels" value="20" min="1" data-testid="input-panels" />
+        <input type="number" id="n-panels" value="{{ cfg.default_n_panels }}" min="1" data-testid="input-panels" />
       </div>
       <div class="field">
         <label for="panel-wattage">Panel Wattage (Wp)</label>
-        <input type="number" id="panel-wattage" value="400" min="1" data-testid="input-wattage" />
+        <input type="number" id="panel-wattage" value="{{ cfg.default_panel_wattage }}" min="1" data-testid="input-wattage" />
       </div>
       <div class="field-row">
         <div class="field" style="margin-bottom:0;">
           <label for="panel-efficiency">Panel Eff. (%)</label>
-          <input type="number" id="panel-efficiency" value="20" min="1" max="100" data-testid="input-paneleff" />
+          <input type="number" id="panel-efficiency" value="20" min="0.1" max="100" step="0.1" data-testid="input-paneleff" />
         </div>
         <div class="field" style="margin-bottom:0;">
           <label for="inverter-efficiency">Inv. Eff. (%)</label>
@@ -190,7 +244,7 @@
       <div class="divider"></div>
       <div class="field">
         <label for="tariff">Electricity Tariff (₱/kWh)</label>
-        <input type="number" id="tariff" value="9.50" min="0" step="0.01" data-testid="input-tariff" />
+        <input type="number" id="tariff" value="{{ cfg.default_tariff }}" min="0" step="0.01" data-testid="input-tariff" />
       </div>
       <div class="field">
         <label for="installation-cost">Installation Cost (₱)</label>
@@ -224,8 +278,20 @@
     <!-- Results state -->
     <div id="results-content" style="display:none;">
       <div class="results-header">
-        <span class="results-title">Analysis Results</span>
-        <span id="payback-badge" class="badge-payback"></span>
+        <div class="results-header-left">
+          <span class="results-title">Analysis Results</span>
+          <span id="payback-badge" class="badge-payback"></span>
+        </div>
+        <div class="results-actions">
+          <button class="btn-action" id="btn-formula" title="View calculation formulas &amp; IEC references">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            Formulas
+          </button>
+          <button class="btn-action btn-action-primary" id="btn-download" title="Download PDF Report">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download Report
+          </button>
+        </div>
       </div>
 
       <div class="kpi-grid">
@@ -255,6 +321,12 @@
         </div>
       </div>
 
+      <!-- Annual Savings Row -->
+      <div class="savings-row">
+        <span class="savings-label">Annual Financial Savings</span>
+        <span class="savings-value" id="kpi-savings">—</span>
+      </div>
+
       <div class="gauge-section">
         <div class="gauge-title">Payback Period Gauge</div>
         <svg id="gauge-svg" width="240" height="130" viewBox="0 0 240 130" role="img" aria-label="Payback gauge" data-testid="payback-gauge"></svg>
@@ -274,11 +346,47 @@
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>Month</th><th>GHI</th><th>DC (kWh)</th><th>AC (kWh)</th></tr>
+            <tr><th>Month</th><th>GHI (kWh/m²/d)</th><th>DC (kWh)</th><th>AC (kWh)</th></tr>
           </thead>
           <tbody id="monthly-table-body"></tbody>
         </table>
       </div>
+
+      <!-- Print-only Formulas Reference (hidden on screen, visible in PDF) -->
+      <div class="print-formulas" aria-hidden="true">
+        <div class="print-formulas-title">Computational Methodology — IEC 61724-1:2021</div>
+        <table class="print-formula-table">
+          <thead>
+            <tr><th>Parameter</th><th>Formula</th><th>Variables</th><th>Reference</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Panel Area</td><td>A = (N × Wp) ÷ (1000 × η)</td><td>N=panels, Wp=rated power, η=efficiency</td><td>IEC 61724-1 §6.3</td></tr>
+            <tr><td>System Capacity</td><td>P_dc = (N × Wp) ÷ 1000</td><td>Peak DC power at STC</td><td>IEC 61724-1 §6.2</td></tr>
+            <tr><td>Inverter Sizing</td><td>P_inv = P_dc × 1.10</td><td>10% safety margin</td><td>NEC Art. 690</td></tr>
+            <tr><td>Monthly DC Energy</td><td>E_dc = GHI × A × η × d</td><td>GHI=irradiance, d=days in month</td><td>IEC 61724-1 §7.3</td></tr>
+            <tr><td>Monthly AC Energy</td><td>E_ac = E_dc × η_inv × (1 − L)</td><td>η_inv=inverter eff., L=system losses</td><td>IEC 61724-1 §7.4</td></tr>
+            <tr><td>Annual AC Yield</td><td>E_yr = Σ E_ac (Jan–Dec)</td><td>Sum of 12 monthly values</td><td>IEC 61724-1 §8.2</td></tr>
+            <tr><td>Annual Savings</td><td>S = E_yr × T</td><td>T=tariff (₱/kWh)</td><td>DOE PH Standard</td></tr>
+            <tr><td>Payback Period</td><td>PBP = C ÷ S</td><td>C=installation cost</td><td>Financial Engineering</td></tr>
+            <tr><td>CO₂ Offset</td><td>CO₂ = E_yr × 0.7</td><td>0.7 kg CO₂/kWh (PH grid factor)</td><td>DOE PH 2023</td></tr>
+          </tbody>
+        </table>
+        <div class="print-formulas-note">
+          Irradiance data: NASA POWER Climatology API (ALLSKY_SFC_SW_DWN, 30-yr average) · STC: 1000 W/m², 25°C, AM 1.5
+        </div>
+      </div>
+    </div>
+
+    <!-- Calculation History Section -->
+    <div id="history-section" style="display:none;">
+      <div class="history-header">
+        <button class="history-toggle" id="btn-history-toggle" aria-expanded="true" aria-controls="history-list">
+          <svg id="history-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="transition:transform 0.2s;"><polyline points="18 15 12 9 6 15"/></svg>
+          <span class="section-title">Recent Reports</span>
+        </button>
+        <button class="btn-history-clear" id="btn-history-clear">Clear All</button>
+      </div>
+      <div id="history-list" class="history-list"></div>
     </div>
   </div>
 
@@ -293,9 +401,108 @@
     </div>
     <div class="footer-right">
       <strong>BU SOLARIS</strong> &nbsp;·&nbsp; Developed by Barcelona · Luz · Ibañez &nbsp;·&nbsp; Bicol University
+      &nbsp;·&nbsp;
+      <a href="/admin" target="_blank" class="footer-admin-link">Admin</a>
     </div>
   </div>
 </footer>
+
+<!-- ── Methodology Modal ───────────────────────────────── -->
+<div id="modal-overlay" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="modal-title-text">
+  <div class="modal-panel">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title-text">Computational Methodology</div>
+      <button class="modal-close" id="btn-modal-close" aria-label="Close modal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-intro">
+        All calculations follow <strong>IEC 61724-1:2021</strong> — Photovoltaic System Performance.
+        Irradiance data (GHI) is sourced from the <strong>NASA POWER Climatology API</strong>
+        (30-year average, ALLSKY_SFC_SW_DWN parameter). Input parameters are at
+        Standard Test Conditions (STC): 1000 W/m², 25°C, AM 1.5.
+      </p>
+
+      <div class="formula-group">
+        <div class="formula-group-title">System Sizing</div>
+
+        <div class="formula-item">
+          <div class="formula-name">Panel Array Area</div>
+          <div class="formula-eq">A = (N × Wp) ÷ (1000 × η)</div>
+          <div class="formula-vars">N = number of panels &nbsp;·&nbsp; Wp = panel rated power (W) &nbsp;·&nbsp; η = panel conversion efficiency (decimal)</div>
+          <div class="formula-ref">IEC 61724-1:2021 §6.3 &nbsp;·&nbsp; Unit: m²</div>
+        </div>
+
+        <div class="formula-item">
+          <div class="formula-name">System DC Capacity</div>
+          <div class="formula-eq">P_dc = (N × Wp) ÷ 1000</div>
+          <div class="formula-vars">Rated peak power of the entire panel array at STC</div>
+          <div class="formula-ref">IEC 61724-1:2021 §6.2 &nbsp;·&nbsp; Unit: kWp</div>
+        </div>
+
+        <div class="formula-item">
+          <div class="formula-name">Inverter Sizing</div>
+          <div class="formula-eq">P_inv = P_dc × 1.10</div>
+          <div class="formula-vars">10% safety margin ensures inverter handles peak generation without clipping</div>
+          <div class="formula-ref">NEC Article 690 — Solar Photovoltaic Systems &nbsp;·&nbsp; Unit: kVA</div>
+        </div>
+      </div>
+
+      <div class="formula-group">
+        <div class="formula-group-title">Monthly Energy Yield</div>
+
+        <div class="formula-item">
+          <div class="formula-name">Monthly DC Energy</div>
+          <div class="formula-eq">E_dc = GHI × A × η × d</div>
+          <div class="formula-vars">GHI = global horizontal irradiance (kWh/m²/day) from NASA POWER &nbsp;·&nbsp; A = panel area (m²) &nbsp;·&nbsp; η = panel efficiency &nbsp;·&nbsp; d = days in month</div>
+          <div class="formula-ref">IEC 61724-1:2021 §7.3 &nbsp;·&nbsp; Unit: kWh/month</div>
+        </div>
+
+        <div class="formula-item">
+          <div class="formula-name">Monthly AC Energy</div>
+          <div class="formula-eq">E_ac = E_dc × η_inv × (1 − L)</div>
+          <div class="formula-vars">η_inv = inverter efficiency (decimal) &nbsp;·&nbsp; L = system losses fraction (wiring, soiling, mismatch, temperature)</div>
+          <div class="formula-ref">IEC 61724-1:2021 §7.4 &nbsp;·&nbsp; Unit: kWh/month</div>
+        </div>
+
+        <div class="formula-item">
+          <div class="formula-name">Annual AC Yield</div>
+          <div class="formula-eq">E_annual = Σ E_ac (Jan–Dec)</div>
+          <div class="formula-vars">Sum of all twelve monthly AC energy values</div>
+          <div class="formula-ref">IEC 61724-1:2021 §8.2 &nbsp;·&nbsp; Unit: kWh/year</div>
+        </div>
+      </div>
+
+      <div class="formula-group">
+        <div class="formula-group-title">Economic Analysis</div>
+
+        <div class="formula-item">
+          <div class="formula-name">Annual Financial Savings</div>
+          <div class="formula-eq">S = E_annual × T</div>
+          <div class="formula-vars">T = electricity tariff (₱/kWh) &nbsp;·&nbsp; Based on avoided grid energy cost</div>
+          <div class="formula-ref">DOE Philippines Tariff Standards &nbsp;·&nbsp; Unit: ₱/year</div>
+        </div>
+
+        <div class="formula-item">
+          <div class="formula-name">Simple Payback Period</div>
+          <div class="formula-eq">PBP = C ÷ S</div>
+          <div class="formula-vars">C = total installation cost (₱) &nbsp;·&nbsp; S = annual savings (₱/yr) &nbsp;·&nbsp; Classification: Excellent ≤5 yr, Good 5–10 yr, Moderate 10–15 yr, Poor &gt;15 yr</div>
+          <div class="formula-ref">Standard Financial Engineering Practice &nbsp;·&nbsp; Unit: years</div>
+        </div>
+      </div>
+
+      <div class="formula-group">
+        <div class="formula-group-title">Environmental Assessment</div>
+
+        <div class="formula-item">
+          <div class="formula-name">Annual CO₂ Offset</div>
+          <div class="formula-eq">CO₂ = E_annual × 0.7</div>
+          <div class="formula-vars">0.7 kg CO₂/kWh = Philippine grid average emission intensity factor (DOE PH, 2023)</div>
+          <div class="formula-ref">Philippine Grid Emission Factor &nbsp;·&nbsp; Unit: kg CO₂/year</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>

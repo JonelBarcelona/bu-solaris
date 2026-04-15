@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — BU SOLARIS Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --orange: #f97316; --purple: #c026d3;
+      --bg: #08040f; --card: rgba(20,12,40,0.82);
+      --border: rgba(255,255,255,0.07); --text: #f1f5f9;
+      --muted: rgba(255,255,255,0.4); --dim: rgba(255,255,255,0.22);
+      --font: 'Space Grotesk', sans-serif;
+    }
+    body {
+      font-family: var(--font); background: linear-gradient(160deg, #0d0517 0%, #180a2e 45%, #1e0a0a 100%);
+      min-height: 100vh; color: var(--text); -webkit-font-smoothing: antialiased;
+      display: flex; flex-direction: column;
+    }
+    /* ── Top bar ── */
+    .topbar {
+      background: rgba(10,5,20,0.88); border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(20px); padding: 0.75rem 1.5rem;
+      display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+      background-image: linear-gradient(90deg, rgba(249,115,22,0.1) 0%, transparent 40%, rgba(192,38,211,0.1) 100%);
+    }
+    .topbar-left { display: flex; align-items: center; gap: 0.75rem; }
+    .logo-dot { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+      background: radial-gradient(circle, #fbbf24, #f97316 50%, #c026d3);
+      box-shadow: 0 0 14px rgba(249,115,22,0.45); }
+    .logo-name { font-size: 0.95rem; font-weight: 700; letter-spacing: 0.14em;
+      background: linear-gradient(135deg, #f97316, #e879f9);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .admin-chip { font-size: 0.58rem; letter-spacing: 0.1em; text-transform: uppercase;
+      color: rgba(192,38,211,0.7); background: rgba(192,38,211,0.08);
+      border: 1px solid rgba(192,38,211,0.2); border-radius: 999px; padding: 0.2rem 0.55rem; }
+    .topbar-right { display: flex; align-items: center; gap: 1rem; }
+    .btn-logout {
+      font-size: 0.72rem; font-weight: 600; font-family: var(--font);
+      color: rgba(255,255,255,0.45); background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 6px;
+      padding: 0.3rem 0.75rem; cursor: pointer; text-decoration: none;
+      transition: all 0.2s;
+    }
+    .btn-logout:hover { color: #f87171; border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.08); }
+    /* ── Layout ── */
+    .layout { display: flex; flex: 1; min-height: 0; }
+    /* ── Sidebar ── */
+    nav {
+      width: 210px; flex-shrink: 0; padding: 1.25rem 0;
+      border-right: 1px solid var(--border); background: rgba(10,5,22,0.5);
+    }
+    .nav-section { font-size: 0.56rem; font-weight: 700; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--dim); padding: 0 1.1rem; margin: 1rem 0 0.4rem; }
+    .nav-link {
+      display: flex; align-items: center; gap: 0.55rem; padding: 0.5rem 1.1rem;
+      font-size: 0.8rem; font-weight: 500; color: var(--muted); text-decoration: none;
+      transition: all 0.15s; border-left: 2px solid transparent;
+    }
+    .nav-link:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+    .nav-link.active { color: var(--orange); border-left-color: var(--orange); background: rgba(249,115,22,0.07); }
+    .nav-link svg { flex-shrink: 0; opacity: 0.7; }
+    .nav-link.active svg { opacity: 1; }
+    /* ── Main ── */
+    main { flex: 1; overflow-y: auto; padding: 1.75rem; }
+    .page-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .page-sub { font-size: 0.72rem; color: var(--muted); margin-bottom: 1.5rem; }
+    /* ── KPI cards ── */
+    .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    @media (max-width: 700px) { .kpi-row { grid-template-columns: 1fr; } }
+    .kpi-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+      padding: 1.1rem 1.25rem; backdrop-filter: blur(16px);
+    }
+    .kpi-label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 0.5rem; }
+    .kpi-value { font-size: 2rem; font-weight: 700; line-height: 1; }
+    .kpi-value.orange { color: var(--orange); }
+    .kpi-value.purple { color: var(--purple); }
+    .kpi-value.green { color: #10b981; }
+    .kpi-sub { font-size: 0.68rem; color: var(--dim); margin-top: 0.3rem; }
+    /* ── Table card ── */
+    .table-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+      backdrop-filter: blur(16px); overflow: hidden; margin-bottom: 1rem;
+    }
+    .table-card-header {
+      padding: 0.85rem 1.25rem; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;
+      background: linear-gradient(90deg, rgba(249,115,22,0.06), rgba(192,38,211,0.06));
+    }
+    .table-card-title { font-size: 0.85rem; font-weight: 600; }
+    .btn-export {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      font-size: 0.72rem; font-weight: 600; font-family: var(--font);
+      background: rgba(249,115,22,0.13); border: 1px solid rgba(249,115,22,0.35);
+      color: #fdba74; border-radius: 6px; padding: 0.3rem 0.75rem;
+      text-decoration: none; transition: all 0.2s; cursor: pointer;
+    }
+    .btn-export:hover { background: rgba(249,115,22,0.24); color: var(--orange); }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 600px; }
+    thead { background: rgba(249,115,22,0.05); }
+    th { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--muted); padding: 0.65rem 0.9rem; text-align: right; white-space: nowrap;
+      cursor: pointer; user-select: none; transition: color 0.15s; }
+    th:first-child { text-align: left; }
+    th:hover { color: var(--orange); }
+    th .sort-icon { display: inline-block; margin-left: 4px; opacity: 0.35; font-size: 0.7rem; }
+    th.sort-asc .sort-icon, th.sort-desc .sort-icon { opacity: 1; color: var(--orange); }
+    td { font-size: 0.78rem; color: rgba(255,255,255,0.65); padding: 0.5rem 0.9rem;
+      text-align: right; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    td:first-child { text-align: left; color: rgba(255,255,255,0.45); font-size: 0.7rem; }
+    .td-orange { color: var(--orange); font-weight: 600; }
+    .td-loc { color: rgba(255,255,255,0.7); font-size: 0.75rem; }
+    .badge-exc { color: #34d399; background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.25); border-radius: 999px; padding: 0.15rem 0.55rem; font-size: 0.62rem; white-space: nowrap; }
+    .badge-good { color: #60a5fa; background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.25); border-radius: 999px; padding: 0.15rem 0.55rem; font-size: 0.62rem; white-space: nowrap; }
+    .badge-mod { color: #fbbf24; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.25); border-radius: 999px; padding: 0.15rem 0.55rem; font-size: 0.62rem; white-space: nowrap; }
+    .badge-poor { color: #f87171; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.25); border-radius: 999px; padding: 0.15rem 0.55rem; font-size: 0.62rem; white-space: nowrap; }
+    .empty-state { padding: 3rem; text-align: center; color: var(--muted); font-size: 0.82rem; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo-dot"></div>
+    <span class="logo-name">BU SOLARIS</span>
+    <span class="admin-chip">Admin</span>
+  </div>
+  <div class="topbar-right">
+    <a href="{{ url_for('admin_logout') }}" class="btn-logout">Sign Out</a>
+  </div>
+</div>
+
+<div class="layout">
+  <nav>
+    <div class="nav-section">Navigation</div>
+    <a href="{{ url_for('admin_dashboard') }}" class="nav-link active">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </a>
+    <a href="{{ url_for('admin_config') }}" class="nav-link">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
+      Configuration
+    </a>
+    <a href="{{ url_for('admin_password') }}" class="nav-link">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      Change Password
+    </a>
+
+    <div class="nav-section" style="margin-top:1.5rem;">Site</div>
+    <a href="{{ url_for('index') }}" class="nav-link" target="_blank">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      View Main App
+    </a>
+  </nav>
+
+  <main>
+    <div class="page-title">Dashboard</div>
+    <div class="page-sub">BU SOLARIS usage statistics and recent calculations</div>
+
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-label">Total Analyses Run</div>
+        <div class="kpi-value orange">{{ total }}</div>
+        <div class="kpi-sub">All-time calculations logged</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Unique Locations</div>
+        <div class="kpi-value purple">{{ unique_locs }}</div>
+        <div class="kpi-sub">Distinct coordinates queried</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Most Recent Run</div>
+        <div class="kpi-value green" style="font-size:1rem; margin-top:0.2rem;">{{ latest_ts[:19].replace('T',' ') if latest_ts != '—' else '—' }}</div>
+        <div class="kpi-sub">UTC timestamp</div>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-card-header">
+        <div class="table-card-title">Recent Calculations (last 20)</div>
+        <a href="{{ url_for('admin_export') }}" class="btn-export">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export CSV
+        </a>
+      </div>
+      {% if recent %}
+      <div class="table-wrap">
+        <table id="calc-table">
+          <thead>
+            <tr>
+              <th data-col="0" data-type="text" onclick="sortTable(this)">Timestamp (UTC)<span class="sort-icon">↕</span></th>
+              <th data-col="1" data-type="text" onclick="sortTable(this)">Location<span class="sort-icon">↕</span></th>
+              <th data-col="2" data-type="num" onclick="sortTable(this)">Capacity (kWp)<span class="sort-icon">↕</span></th>
+              <th data-col="3" data-type="num" onclick="sortTable(this)">Annual Yield (kWh)<span class="sort-icon">↕</span></th>
+              <th data-col="4" data-type="num" onclick="sortTable(this)">Payback (yr)<span class="sort-icon">↕</span></th>
+              <th data-col="5" data-type="text" onclick="sortTable(this)">Classification<span class="sort-icon">↕</span></th>
+              <th data-col="6" data-type="num" onclick="sortTable(this)">Tariff (₱)<span class="sort-icon">↕</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in recent %}
+            <tr>
+              <td>{{ row['timestamp'][:19].replace('T',' ') }}</td>
+              <td class="td-loc">{{ "%.4f"|format(row['lat']) }}, {{ "%.4f"|format(row['lon']) }}</td>
+              <td class="td-orange">{{ "%.2f"|format(row['system_capacity_kwp']) }}</td>
+              <td>{{ "{:,.0f}".format(row['annual_ac_kwh']) }}</td>
+              <td>{{ "%.1f"|format(row['payback_years']) }}</td>
+              <td>
+                {% if row['payback_classification'] == 'Excellent' %}<span class="badge-exc">Excellent</span>
+                {% elif row['payback_classification'] == 'Good' %}<span class="badge-good">Good</span>
+                {% elif row['payback_classification'] == 'Moderate' %}<span class="badge-mod">Moderate</span>
+                {% else %}<span class="badge-poor">Poor</span>{% endif %}
+              </td>
+              <td>₱{{ "%.2f"|format(row['tariff']) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state">No calculations logged yet. Run an analysis from the main app to see data here.</div>
+      {% endif %}
+    </div>
+  </main>
+</div>
+
+<script>
+(function() {
+  var sortState = { col: null, asc: true };
+
+  window.sortTable = function(th) {
+    var col = parseInt(th.getAttribute('data-col'));
+    var type = th.getAttribute('data-type');
+    var table = document.getElementById('calc-table');
+    var tbody = table.querySelector('tbody');
+    var rows = Array.from(tbody.querySelectorAll('tr'));
+
+    // Toggle direction
+    if (sortState.col === col) {
+      sortState.asc = !sortState.asc;
+    } else {
+      sortState.col = col;
+      sortState.asc = true;
+    }
+
+    rows.sort(function(a, b) {
+      var aVal = a.cells[col] ? a.cells[col].textContent.trim() : '';
+      var bVal = b.cells[col] ? b.cells[col].textContent.trim() : '';
+      var cmp;
+      if (type === 'num') {
+        cmp = (parseFloat(aVal.replace(/[^\d.\-]/g, '')) || 0) -
+              (parseFloat(bVal.replace(/[^\d.\-]/g, '')) || 0);
+      } else {
+        cmp = aVal.localeCompare(bVal);
+      }
+      return sortState.asc ? cmp : -cmp;
+    });
+
+    rows.forEach(function(r) { tbody.appendChild(r); });
+
+    // Update header indicators
+    table.querySelectorAll('th').forEach(function(h) {
+      h.classList.remove('sort-asc', 'sort-desc');
+      var icon = h.querySelector('.sort-icon');
+      if (icon) icon.textContent = '↕';
+    });
+    th.classList.add(sortState.asc ? 'sort-asc' : 'sort-desc');
+    var activeIcon = th.querySelector('.sort-icon');
+    if (activeIcon) activeIcon.textContent = sortState.asc ? '↑' : '↓';
+  };
+})();
+</script>
+</body>
+</html>
