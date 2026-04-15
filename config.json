@@ -1,0 +1,10 @@
+{
+  "co2_factor": 0.7,
+  "default_n_panels": 20,
+  "default_panel_wattage": 400.0,
+  "default_tariff": 9.5,
+  "payback_excellent_max": 5.0,
+  "payback_good_max": 10.0,
+  "payback_moderate_max": 15.0,
+  "admin_password_hash": "$2b$12$NaK1v4nxVuyQiCUNUmZlpOzm8UAZMYuFw45cWmqYyfEUl6VOrUFty"
+}

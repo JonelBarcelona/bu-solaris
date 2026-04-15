@@ -1,0 +1,6 @@
+config.json
+logs.db
+.secret_key
+__pycache__/
+*.pyc
+*.pyo
